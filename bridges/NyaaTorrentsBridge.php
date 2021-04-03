@@ -50,6 +50,11 @@ class NyaaTorrentsBridge extends BridgeAbstract {
 				'name' => 'Keyword',
 				'description' => 'Keyword(s)',
 				'type' => 'text'
+			),
+			'u' => array(
+				'name' => 'User',
+				'description' => 'User',
+				'type' => 'text'
 			)
 		)
 	);
@@ -60,8 +65,13 @@ class NyaaTorrentsBridge extends BridgeAbstract {
 
 	public function collectData() {
 
-		// Build Search URL from user-provided parameters
-		$search_url = self::URI . '?s=id&o=desc&'
+		// Determine base URL, either home page or user page
+		$base_uri = self::URI;
+		if (!empty($this->getInput('u')))
+			$base_uri = $base_uri . 'user/' . urlencode($this->getInput('u'));
+
+		// Build Search URL from base URL and search criteria
+		$search_url = $base_uri . '?s=id&o=desc&'
 		. http_build_query(array(
 			'f' => $this->getInput('f'),
 			'c' => $this->getInput('c'),
@@ -100,7 +110,9 @@ class NyaaTorrentsBridge extends BridgeAbstract {
 
 					//Retrieve data from page contents
 					$item_title = str_replace(' :: Nyaa', '', $item_html->find('title', 0)->plaintext);
-					$item_desc = str_get_html(markdownToHtml($item_html->find('#torrent-description', 0)->innertext));
+					$item_desc = str_get_html(
+						markdownToHtml(html_entity_decode($item_html->find('#torrent-description', 0)->innertext))
+					);
 					$item_author = extractFromDelimiters($item_html->outertext, 'href="/user/', '"');
 					$item_date = intval(extractFromDelimiters($item_html->outertext, 'data-timestamp="', '"'));
 
